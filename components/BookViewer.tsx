@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { FullBook, Feedback } from '../types';
-import { Download, Share2, Star, Printer, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Download, Star, Printer, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface Props {
   book: FullBook;
@@ -20,13 +20,34 @@ const BookViewer: React.FC<Props> = ({ book }) => {
   const handleFeedback = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    // In a real SaaS, this would save to a database
     setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
-      <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col md:flex-row min-h-[600px]">
+      {/* 
+          HIDDEN PRINT VERSION 
+          This section is hidden in standard UI but becomes the main content when window.print() is called.
+      */}
+      <div className="print-only p-12 bg-white">
+        <header className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-4">{book.title}</h1>
+          <p className="text-slate-500 italic">{book.summary}</p>
+        </header>
+        {book.chapters.map((ch, idx) => (
+          <article key={idx} className="page-break mb-12">
+            <h2 className="text-3xl font-bold mb-6 text-indigo-600">
+              Chapter {ch.chapterNumber}: {ch.title}
+            </h2>
+            <p className="text-xl leading-relaxed text-slate-800 font-serif whitespace-pre-wrap">
+              {ch.content}
+            </p>
+          </article>
+        ))}
+      </div>
+
+      {/* INTERACTIVE UI (Screen Only) */}
+      <div className="no-print bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col md:flex-row min-h-[600px]">
         {/* Navigation Sidebar */}
         <aside className="w-full md:w-64 bg-slate-50 border-r border-slate-100 p-8 flex flex-col">
           <div className="mb-8">
@@ -48,12 +69,15 @@ const BookViewer: React.FC<Props> = ({ book }) => {
           <div className="mt-auto pt-8 border-t border-slate-200 space-y-4">
             <button
               onClick={handleExport}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all shadow-sm"
+              className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all shadow-sm group"
             >
-              <Download size={18} /> Export PDF
+              <Download size={18} className="group-hover:text-indigo-600" /> Export PDF
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all shadow-sm">
-              <Printer size={18} /> Print Story
+            <button 
+              onClick={handleExport}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all shadow-sm group"
+            >
+              <Printer size={18} className="group-hover:text-indigo-600" /> Print Story
             </button>
           </div>
         </aside>
@@ -109,7 +133,7 @@ const BookViewer: React.FC<Props> = ({ book }) => {
       </div>
 
       {/* Feedback Section */}
-      <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
+      <section className="no-print mt-12 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Star className="text-amber-400 fill-amber-400" size={24} />
           Your Thoughts on this Story?

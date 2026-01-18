@@ -4,6 +4,7 @@ import { AgeGroup, StoryTone, Language } from './types';
 export const AGE_GROUPS: AgeGroup[] = ['0-3 years', '4-6 years', '7-9 years', '10-12 years'];
 export const TONES: StoryTone[] = ['Magical', 'Educational', 'Adventurous', 'Calming'];
 export const LANGUAGES: Language[] = ['English', 'Spanish', 'French', 'German', 'Chinese'];
+export const WORD_COUNTS = [1000, 1500, 3000];
 
 export const MODELS = [
   { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Fast & Modern)' },
@@ -16,6 +17,14 @@ export const MODELS = [
   { id: 'gemini-2.5-flash-preview-tts', name: 'Gemini TTS Optimized' },
   { id: 'gemini-3-pro-preview-012025', name: 'Gemini 3 Pro v01.25' },
   { id: 'gemini-3-flash-preview-experimental', name: 'Gemini 3 Flash (Experimental)' }
+];
+
+export const STORY_SAMPLES = [
+  { label: "Lonely Robot", prompt: "A lonely robot on a distant planet who learns how to make friends with space butterflies." },
+  { label: "Magic Paintbrush", prompt: "A little girl who finds a magical paintbrush that brings her drawings to life." },
+  { label: "Whispering Forest", prompt: "A forest where the trees whisper secrets to a brave boy searching for a lost toy." },
+  { label: "Kitchen Mouse", prompt: "The adventures of a kitchen mouse who dreams of becoming a world-famous chef." },
+  { label: "Ice Dragon", prompt: "A sleepy dragon who accidentally sneezes ice instead of fire, creating a winter wonderland." }
 ];
 
 export const SYSTEM_PROMPT_BASE = `You are an expert children's story writer and educator. 

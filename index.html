@@ -14,6 +14,52 @@
         h1, h2, h3, .brand {
             font-family: 'Fredoka', sans-serif;
         }
+
+        /* Print optimization */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #root > div > nav, 
+            #root > div > main > div > form,
+            #root > div > main > .text-center,
+            aside,
+            button,
+            section.mt-12,
+            .fixed.bottom-8,
+            footer,
+            .mt-16,
+            .mt-20 {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .page-break {
+                page-break-after: always;
+            }
+
+            .book-container {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+
+        .print-only {
+            display: none;
+        }
     </style>
 <script type="importmap">
 {

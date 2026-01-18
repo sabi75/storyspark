@@ -54,13 +54,19 @@ export const generateStoryProposal = async (config: StoryConfig): Promise<StoryP
 };
 
 export const generateFullBook = async (config: StoryConfig): Promise<FullBook> => {
+  // Approximate words per chapter based on total word count
+  const wordsPerChapter = Math.floor(config.wordCount / 5);
+
   const response = await ai.models.generateContent({
     model: config.modelName,
     contents: `Write a full children's book based on: "${config.prompt}". 
     Target age: ${config.ageGroup}. 
     Tone: ${config.tone}. 
     Language: ${config.language}. 
-    Structure it into exactly 5 chapters. Each chapter should be 150-300 words. 
+    
+    CRITICAL: The total book length MUST be approximately ${config.wordCount} words. 
+    Structure it into exactly 5 chapters. 
+    Each chapter should be approximately ${wordsPerChapter} words long to reach the total goal.
     Maintain consistent character development and a clear narrative arc.`,
     config: {
       systemInstruction: SYSTEM_PROMPT_BASE,

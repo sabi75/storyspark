@@ -15,6 +15,7 @@ export interface StoryConfig {
   language: Language;
   mode: AIMode;
   modelName: string;
+  wordCount: number;
 }
 
 export interface Character {
@@ -47,6 +48,13 @@ export interface FullBook {
   title: string;
   chapters: Chapter[];
   summary: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  config: StoryConfig;
+  data: StoryProposal | FullBook;
 }
 
 export interface Feedback {

@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { StoryConfig, AIMode, AgeGroup, StoryTone, Language } from '../types';
-import { AGE_GROUPS, TONES, LANGUAGES, MODELS } from '../constants';
-import { Sparkles, BookOpen, Settings2, BrainCircuit } from 'lucide-react';
+import { AGE_GROUPS, TONES, LANGUAGES, MODELS, STORY_SAMPLES, WORD_COUNTS } from '../constants';
+import { Sparkles, BookOpen, BrainCircuit, Wand2, Ruler } from 'lucide-react';
 
 interface Props {
   onGenerate: (config: StoryConfig) => void;
@@ -16,20 +16,43 @@ const StoryForm: React.FC<Props> = ({ onGenerate, isLoading }) => {
   const [language, setLanguage] = React.useState<Language>(LANGUAGES[0]);
   const [mode, setMode] = React.useState<AIMode>(AIMode.ASK);
   const [modelName, setModelName] = React.useState(MODELS[0].id);
+  const [wordCount, setWordCount] = React.useState(WORD_COUNTS[0]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-    onGenerate({ prompt, ageGroup, tone, language, mode, modelName });
+    onGenerate({ prompt, ageGroup, tone, language, mode, modelName, wordCount });
+  };
+
+  const handleApplySample = (samplePrompt: string) => {
+    setPrompt(samplePrompt);
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 max-w-4xl mx-auto space-y-8">
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-          <BookOpen size={16} />
-          Your Story Idea
-        </label>
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <BookOpen size={16} />
+            Your Story Idea
+          </label>
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter shrink-0 flex items-center gap-1">
+              <Wand2 size={10} />
+              Inspiration:
+            </span>
+            {STORY_SAMPLES.map((sample, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleApplySample(sample.prompt)}
+                className="whitespace-nowrap px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-xs font-medium transition-colors border border-indigo-100"
+              >
+                {sample.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -54,30 +77,43 @@ const StoryForm: React.FC<Props> = ({ onGenerate, isLoading }) => {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-500 flex items-center gap-2">
-              Target Age
+            <label className="text-sm font-semibold text-slate-500">
+              Age
             </label>
             <select
               value={ageGroup}
               onChange={(e) => setAgeGroup(e.target.value as AgeGroup)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all appearance-none cursor-pointer"
+              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none"
             >
               {AGE_GROUPS.map(age => <option key={age} value={age}>{age}</option>)}
             </select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-500 flex items-center gap-2">
-              Story Tone
+            <label className="text-sm font-semibold text-slate-500">
+              Tone
             </label>
             <select
               value={tone}
               onChange={(e) => setTone(e.target.value as StoryTone)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all appearance-none cursor-pointer"
+              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none"
             >
               {TONES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-500 flex items-center gap-1">
+              Length
+            </label>
+            <select
+              value={wordCount}
+              onChange={(e) => setWordCount(Number(e.target.value))}
+              className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 outline-none"
+            >
+              {WORD_COUNTS.map(count => <option key={count} value={count}>{count} words</option>)}
             </select>
           </div>
         </div>
@@ -90,14 +126,14 @@ const StoryForm: React.FC<Props> = ({ onGenerate, isLoading }) => {
             onClick={() => setMode(AIMode.ASK)}
             className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${mode === AIMode.ASK ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            Ask Mode (Proposal)
+            Proposal
           </button>
           <button
             type="button"
             onClick={() => setMode(AIMode.AGENT)}
             className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${mode === AIMode.AGENT ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            Agent Mode (Full Book)
+            Full Book
           </button>
         </div>
 

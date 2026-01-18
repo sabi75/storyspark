@@ -1,7 +1,7 @@
 
-import React, { useState, useCallback } from 'react';
-import { Sparkles, Wand2, History, BookCopy, Library } from 'lucide-react';
-import { StoryConfig, StoryProposal, FullBook, AIMode } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sparkles, Wand2, History, BookCopy, Library, X, Trash2, Clock } from 'lucide-react';
+import { StoryConfig, StoryProposal, FullBook, AIMode, HistoryItem } from './types';
 import { generateStoryProposal, generateFullBook } from './services/geminiService';
 import StoryForm from './components/StoryForm';
 import ProposalViewer from './components/ProposalViewer';
@@ -13,6 +13,35 @@ const App: React.FC = () => {
   const [currentProposal, setCurrentProposal] = useState<StoryProposal | null>(null);
   const [currentBook, setCurrentBook] = useState<FullBook | null>(null);
   const [config, setConfig] = useState<StoryConfig | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Load history from local storage
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('story_spark_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse history', e);
+      }
+    }
+  }, []);
+
+  // Save history to local storage
+  useEffect(() => {
+    localStorage.setItem('story_spark_history', JSON.stringify(history));
+  }, [history]);
+
+  const addToHistory = (config: StoryConfig, data: StoryProposal | FullBook) => {
+    const newItem: HistoryItem = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      config,
+      data
+    };
+    setHistory(prev => [newItem, ...prev]);
+  };
 
   const handleGenerate = async (newConfig: StoryConfig) => {
     setLoading(true);
@@ -25,9 +54,11 @@ const App: React.FC = () => {
       if (newConfig.mode === AIMode.ASK) {
         const proposal = await generateStoryProposal(newConfig);
         setCurrentProposal(proposal);
+        addToHistory(newConfig, proposal);
       } else {
         const book = await generateFullBook(newConfig);
         setCurrentBook(book);
+        addToHistory(newConfig, book);
       }
     } catch (err: any) {
       console.error(err);
@@ -44,11 +75,29 @@ const App: React.FC = () => {
       const book = await generateFullBook(config);
       setCurrentBook(book);
       setCurrentProposal(null);
+      addToHistory(config, book);
     } catch (err) {
       setError('Failed to transition from proposal to book.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadFromHistory = (item: HistoryItem) => {
+    setConfig(item.config);
+    if ('chapters' in item.data) {
+      setCurrentBook(item.data as FullBook);
+      setCurrentProposal(null);
+    } else {
+      setCurrentProposal(item.data as StoryProposal);
+      setCurrentBook(null);
+    }
+    setIsSidebarOpen(false);
+  };
+
+  const deleteFromHistory = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHistory(prev => prev.filter(item => item.id !== id));
   };
 
   const reset = () => {
@@ -61,7 +110,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Navigation / Header */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+      <nav className="no-print sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div 
             className="flex items-center gap-3 cursor-pointer group"
@@ -76,18 +125,80 @@ const App: React.FC = () => {
           </div>
           <div className="hidden md:flex items-center gap-8">
             <button className="text-slate-500 font-medium hover:text-indigo-600 transition-colors">How it works</button>
-            <button className="text-slate-500 font-medium hover:text-indigo-600 transition-colors">Pricing</button>
-            <button className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all shadow-sm">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all shadow-sm flex items-center gap-2"
+            >
+              <Library size={18} />
               My Library
             </button>
           </div>
         </div>
       </nav>
 
+      {/* History Sidebar */}
+      <div className={`fixed inset-0 z-[60] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+        <div className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 flex flex-col ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <History className="text-indigo-600" size={24} />
+              Story Library
+            </h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {history.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                  <BookCopy size={32} />
+                </div>
+                <p className="text-slate-500 font-medium">Your library is empty.</p>
+                <p className="text-slate-400 text-sm">Generate your first story to see it here!</p>
+              </div>
+            ) : (
+              history.map((item) => (
+                <div 
+                  key={item.id}
+                  onClick={() => loadFromHistory(item)}
+                  className="group relative p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-400 hover:bg-white transition-all cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-slate-800 pr-8">
+                      {item.data.title || 'Untitled Story'}
+                    </h4>
+                    <button 
+                      onClick={(e) => deleteFromHistory(item.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all absolute top-3 right-3"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${'chapters' in item.data ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {'chapters' in item.data ? 'Full Book' : 'Proposal'}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full uppercase tracking-tighter">
+                      {item.config.ageGroup}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                    <Clock size={12} />
+                    {new Date(item.timestamp).toLocaleDateString()} at {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Intro Section */}
         {!currentProposal && !currentBook && !loading && (
-          <div className="text-center mb-16 space-y-4">
+          <div className="no-print text-center mb-16 space-y-4">
             <h1 className="text-5xl md:text-7xl font-bold text-slate-900 max-w-4xl mx-auto leading-tight">
               Bring your child's <span className="text-indigo-600">imagination</span> to life.
             </h1>
@@ -130,14 +241,18 @@ const App: React.FC = () => {
         {/* Main Content Area */}
         <div className="relative">
           {!loading && !currentProposal && !currentBook && (
-            <StoryForm onGenerate={handleGenerate} isLoading={loading} />
+            <div className="no-print">
+              <StoryForm onGenerate={handleGenerate} isLoading={loading} />
+            </div>
           )}
 
           {!loading && currentProposal && (
-            <ProposalViewer 
-              proposal={currentProposal} 
-              onConfirm={handleApproveProposal} 
-            />
+            <div className="no-print">
+              <ProposalViewer 
+                proposal={currentProposal} 
+                onConfirm={handleApproveProposal} 
+              />
+            </div>
           )}
 
           {!loading && currentBook && (
@@ -147,7 +262,7 @@ const App: React.FC = () => {
 
         {/* Action Bar (When result is shown) */}
         {(currentProposal || currentBook) && !loading && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+          <div className="no-print fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
             <button
               onClick={reset}
               className="bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-2 font-bold hover:scale-105 active:scale-95 transition-all"
@@ -160,7 +275,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer Decoration */}
-      <div className="mt-20 border-t border-slate-100 py-12 px-6">
+      <footer className="no-print mt-20 border-t border-slate-100 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2 text-slate-400 font-medium">
             <Sparkles size={16} />
@@ -172,7 +287,7 @@ const App: React.FC = () => {
             <a href="#" className="hover:text-indigo-600">Contact Support</a>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
